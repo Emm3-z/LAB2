@@ -58,14 +58,30 @@ int main() {
         }
 
         for (int i = 1; i <= 5; i++) {
+            // Esperar a que los consumidores terminen el ciclo anterior
+            while (mem->listo == 1)
+                usleep(100000);
+
             int a = i;
             int b = i + 2;
+            mem->a = a;
+            mem->b = b;
+            mem->procesados = 0;
+            mem->listo = 1;
 
-            // Enviar datos por FIFO
+            // Escribir los datos por FIFO (dos veces: uno para cada consumidor)
             char buffer[BUFFER_SIZE];
             snprintf(buffer, sizeof(buffer), "%d %d", a, b);
             write(fd, buffer, strlen(buffer) + 1);
+            write(fd, buffer, strlen(buffer) + 1);
+
             printf("[Productor] Enviado por FIFO: %s\n", buffer);
+
+            // Esperar a que los dos consumidores terminen
+            while (mem->procesados < 2)
+                usleep(100000);
+
+            mem->listo = 0;
             sleep(1);
         }
 
@@ -84,18 +100,22 @@ int main() {
 
             char buffer[BUFFER_SIZE];
             for (int i = 0; i < 5; i++) {
-                // Leer datos desde el FIFO
                 read(fd, buffer, sizeof(buffer));
 
-                // Extraer a y b
                 int a, b;
                 sscanf(buffer, "%d %d", &a, &b);
 
+                // Esperar que el productor haya marcado listo
+                while (mem->listo == 0)
+                    usleep(100000);
+
                 int suma = a + b;
-                mem->a = a;
-                mem->b = b;
                 mem->resultado_sum = suma;
                 printf("[Consumidor 1] %d + %d = %d\n", a, b, suma);
+
+                mem->procesados += 1;
+                while (mem->listo == 1 && mem->procesados < 2)
+                    usleep(100000);
             }
 
             close(fd);
@@ -117,11 +137,16 @@ int main() {
                     int a, b;
                     sscanf(buffer, "%d %d", &a, &b);
 
+                    while (mem->listo == 0)
+                        usleep(100000);
+
                     int mult = a * b;
-                    mem->a = a;
-                    mem->b = b;
                     mem->resultado_mul = mult;
                     printf("[Consumidor 2] %d * %d = %d\n", a, b, mult);
+
+                    mem->procesados += 1;
+                    while (mem->listo == 1 && mem->procesados < 2)
+                        usleep(100000);
                 }
 
                 close(fd);
