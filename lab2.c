@@ -104,7 +104,7 @@ int main() {
                 while (mem->procesados < 2)
                     usleep(100000);
 
-                printf("Suma: %d + %d = %d | Multiplicación: %d * %d = %d\n",
+                printf("[Consumidor 1 - Suma]: %d + %d = %d | [Consumidor 2 - Multiplicación]: %d * %d = %d\n",
                        mem->a, mem->b, mem->resultado_sum,
                        mem->a, mem->b, mem->resultado_mul);
 
@@ -121,7 +121,7 @@ int main() {
                 for (int i = 0; i < 5; i++) {
                     // Esperar que el consumidor 1 haya puesto nuevos datos
                     while (mem->listo == 0)
-                        usleep(100000);
+                        usleep(200000);
 
                     int a = mem->a;
                     int b = mem->b;
